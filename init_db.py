@@ -1,7 +1,8 @@
-import os
 import asyncio
-import asyncpg
+import os
 from datetime import date
+
+import asyncpg
 
 async def init():
     dsn = os.environ.get("DATABASE_URL")

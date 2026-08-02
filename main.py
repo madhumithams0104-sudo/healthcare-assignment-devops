@@ -1,9 +1,10 @@
 import os
+
 import asyncpg
-from fastapi import FastAPI, Request, HTTPException, status
-from fastapi.responses import HTMLResponse
-from fastapi.staticfiles import StaticFiles
+from fastapi import FastAPI, HTTPException, Request, status
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
 
 app = FastAPI()
 
@@ -23,10 +24,9 @@ ADMIN_PASSWORD = os.environ.get("APP_ADMIN_PASSWORD", "P@ssw0rd!")
 SESSION_TOKEN = "demo-session-token"
 
 
-@app.get("/", response_class=HTMLResponse)
+@app.get("/", response_class=FileResponse)
 async def index():
-    with open("frontend/index.html", "r") as f:
-        return HTMLResponse(f.read())
+    return FileResponse("frontend/index.html")
 
 
 @app.get("/health")
@@ -57,13 +57,19 @@ async def login(request: Request):
             "token": SESSION_TOKEN,
             "user": {"name": "SkyPoint Clinician", "role": "Provider"},
         }
-    raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials")
+    raise HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Invalid credentials",
+    )
 
 
 def authorized(request: Request):
     auth = request.headers.get("Authorization", "")
     if auth != f"Bearer {SESSION_TOKEN}":
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Unauthorized")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Unauthorized",
+        )
 
 
 @app.get("/dashboard")
@@ -82,7 +88,7 @@ async def appointments(request: Request):
     authorized(request)
     return {
         "appointments": [
-            {"time": "09:00", "patient": "Mar�a Santos", "status": "Check-in"},
+            {"time": "09:00", "patient": "María Santos", "status": "Check-in"},
             {"time": "09:30", "patient": "James Lee", "status": "Pending"},
             {"time": "10:15", "patient": "Aisha Khan", "status": "Confirmed"},
         ]
@@ -94,17 +100,28 @@ async def list_patients(request: Request):
     authorized(request)
     dsn = os.environ.get("DATABASE_URL")
     sample = [{"id": 1, "name": "John Doe", "dob": "1980-01-01", "status": "Active"}]
+
     if not dsn:
         return {"patients": sample}
+
     conn = await asyncpg.connect(dsn)
+
     try:
-        rows = await conn.fetch("SELECT id, name, dob FROM patients ORDER BY id LIMIT 100")
+        rows = await conn.fetch(
+            "SELECT id, name, dob FROM patients ORDER BY id LIMIT 100"
+        )
         patients = [
-            {"id": r["id"], "name": r["name"], "dob": str(r["dob"]), "status": "Active"}
+            {
+                "id": r["id"],
+                "name": r["name"],
+                "dob": str(r["dob"]),
+                "status": "Active",
+            }
             for r in rows
         ]
     except Exception:
         patients = sample
     finally:
         await conn.close()
+
     return {"patients": patients}
