@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+
 """AI-assisted PR review.
 
 Reads a unified diff (from stdin or a file passed as argv[1]) and asks an
