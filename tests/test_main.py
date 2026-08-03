@@ -3,6 +3,7 @@ import os
 import sys
 
 import pytest
+from fastapi import HTTPException
 
 sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 
@@ -20,5 +21,14 @@ class DummyRequest:
 
 
 def test_authorized_rejects_missing_token():
-    with pytest.raises(Exception):
+    with pytest.raises(HTTPException):
         authorized(DummyRequest())
+
+
+def test_authorized_accepts_valid_token():
+    request = DummyRequest(
+        headers={"Authorization": "Bearer demo-session-token"}
+    )
+
+    # Should not raise an exception
+    authorized(request)

@@ -24,7 +24,7 @@ ADMIN_PASSWORD = os.environ.get("APP_ADMIN_PASSWORD", "P@ssw0rd!")
 SESSION_TOKEN = "demo-session-token"
 
 
-@app.get("/", response_class=FileResponse)
+@app.get("/")
 async def index():
     return FileResponse("frontend/index.html")
 
@@ -57,19 +57,13 @@ async def login(request: Request):
             "token": SESSION_TOKEN,
             "user": {"name": "SkyPoint Clinician", "role": "Provider"},
         }
-    raise HTTPException(
-        status_code=status.HTTP_401_UNAUTHORIZED,
-        detail="Invalid credentials",
-    )
+    raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials")
 
 
 def authorized(request: Request):
     auth = request.headers.get("Authorization", "")
     if auth != f"Bearer {SESSION_TOKEN}":
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Unauthorized",
-        )
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Unauthorized")
 
 
 @app.get("/dashboard")
@@ -88,7 +82,7 @@ async def appointments(request: Request):
     authorized(request)
     return {
         "appointments": [
-            {"time": "09:00", "patient": "María Santos", "status": "Check-in"},
+            {"time": "09:00", "patient": "Mar�a Santos", "status": "Check-in"},
             {"time": "09:30", "patient": "James Lee", "status": "Pending"},
             {"time": "10:15", "patient": "Aisha Khan", "status": "Confirmed"},
         ]
@@ -98,8 +92,17 @@ async def appointments(request: Request):
 @app.get("/patients")
 async def list_patients(request: Request):
     authorized(request)
+
     dsn = os.environ.get("DATABASE_URL")
-    sample = [{"id": 1, "name": "John Doe", "dob": "1980-01-01", "status": "Active"}]
+
+    sample = [
+        {
+            "id": 1,
+            "name": "John Doe",
+            "dob": "1980-01-01",
+            "status": "Active",
+        }
+    ]
 
     if not dsn:
         return {"patients": sample}
@@ -110,6 +113,7 @@ async def list_patients(request: Request):
         rows = await conn.fetch(
             "SELECT id, name, dob FROM patients ORDER BY id LIMIT 100"
         )
+
         patients = [
             {
                 "id": r["id"],
@@ -119,8 +123,10 @@ async def list_patients(request: Request):
             }
             for r in rows
         ]
-    except Exception:
+
+    except asyncpg.PostgresError:
         patients = sample
+
     finally:
         await conn.close()
 
